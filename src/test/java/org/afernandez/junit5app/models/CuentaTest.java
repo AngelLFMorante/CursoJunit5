@@ -26,4 +26,21 @@ class CuentaTest {
         assertTrue(cuenta.getSaldo().compareTo(BigDecimal.ZERO) > 0 );
     }
 
+    @Test
+    void testReferenciaCuenta() {
+        //vamos a crear un TDD, con lo que tendremos dos objetos en diferentes estados de memoria y no como referencia
+        Cuenta cuenta = new Cuenta("Jhon Done", new BigDecimal("8900.9997"));
+        Cuenta cuenta2 = new Cuenta("Jhon Done", new BigDecimal("8900.9997"));
+
+        //assertNotEquals(cuenta2, cuenta);//comparamos que sean distintos...
+
+        //queremos comprobar por valor.
+        assertEquals(cuenta2, cuenta); //falla la primera vez por que son dos objetos diferentes aunque tengan el mismo valor.
+
+        //ahora comprobamos por valor con lo que hemos tocado la clase cuenta, y hemos creado un metodo boolean equals.
+        //hemos comprobado que sea el mismo objeto que Cuenta y comprobamos si el valor de los objetos son lo mismo, con
+        //lo que en teoría estamos comprobado por referencia y no por dos objetos distintos.
+
+    }
+
 }
