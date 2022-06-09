@@ -4,11 +4,16 @@ import org.junit.jupiter.api.*;
 import org.afernandez.junit5app.models.Cuenta;
 import org.junit.jupiter.api.condition.*;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvFileSource;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import src.main.java.org.afernandez.junit5app.exceptions.DineroInsuficienteException;
 import src.main.java.org.afernandez.junit5app.models.Banco;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -51,6 +56,7 @@ class CuentaTest {
     }
 
     @Nested
+    @Tag("cuenta")
     class CuentaTestNombreSaldo{
         @Test
         @DisplayName("Probando nombre de la cuenta corriente!")
@@ -100,6 +106,7 @@ class CuentaTest {
 
     @Nested
     class CuentaOperacionesTest{
+        @Tag("cuenta")
         @Test
         void testDebitoCuenta() {
             //cuenta = new Cuenta("Ángel", new BigDecimal("1000.12345"));
@@ -110,6 +117,7 @@ class CuentaTest {
         }
 
         @Test
+        @Tag("cuenta")
         void testCreditoCuenta() {
             //cuenta = new Cuenta("Ángel", new BigDecimal("1000.12345"));
             cuenta.credito(new BigDecimal(100)); // se le va a sumar 1000 de los 1000
@@ -117,7 +125,10 @@ class CuentaTest {
             assertEquals(1100, cuenta.getSaldo().intValue());
             assertEquals("1100.12345", cuenta.getSaldo().toPlainString());
         }
+
         @Test
+        @Tag("cuenta")
+        @Tag("banco") //se puede utilizar varios tag para asociar al metodo
         void testTransferirDineroCuentas() {
             Cuenta cuenta1 = new Cuenta ("Jhon Done", new BigDecimal("2500"));
             Cuenta cuenta2 = new Cuenta ("Jhon Done", new BigDecimal("1500.8989"));
@@ -132,6 +143,8 @@ class CuentaTest {
 
 
     @Test
+    @Tag("cuenta")
+    @Tag("error")
     void testDineroInsuficienteExceptionCuenta() {
          //cuenta = new Cuenta("Ángel", new BigDecimal("1000.12345"));
         Exception exception = assertThrows(DineroInsuficienteException.class, ()->{
@@ -313,15 +326,60 @@ class CuentaTest {
     Para realizar test con diferentes escenarios con diferentes valores se realiza con @ParameterizedTest
      */
 
-    @ParameterizedTest(name = "numero {index} ejecutando con el valor {argumentsWithNames}") //tiene que ir con valores, con @Source nos salen todos los valores que podemos hacer, CSV, Value, etc..
-    @ValueSource(strings = {"100", "200", "300", "500", "700", "1000"}) //metemos valores para ver como se comporta
-    //cuando trabajamos con decimales es mejor con strings, porque con double se pierde mucha precision.
-    void testDebitoCuenta(String total) { // el parametro debe ser igual que el de valueSource
+    @Nested
+    @Tag("param") //al poner el tag podemos decir que pruebas podemos utilizar, se puede hacer en la clase o en cada metodo.
+    class PruebasParametrizadasTest{
+        @ParameterizedTest(name = "numero {index} ejecutando con el valor {argumentsWithNames}") //tiene que ir con valores, con @Source nos salen todos los valores que podemos hacer, CSV, Value, etc..
+        @ValueSource(strings = {"100", "200", "300", "500", "700", "1000"}) //metemos valores para ver como se comporta
+            //cuando trabajamos con decimales es mejor con strings, porque con double se pierde mucha precision.
+        void testDebitoCuenta(String total) { // el parametro debe ser igual que el de valueSource
+            cuenta.debito(new BigDecimal(total));
+            assertNotNull(cuenta.getSaldo());
+            assertTrue(cuenta.getSaldo().compareTo(BigDecimal.ZERO) > 0); //vamos a comprobar si restandole todos los valores que tenemos el credito es mayor a 0
+        }
+
+        @ParameterizedTest(name = "numero {index} ejecutando con el valor {argumentsWithNames}")
+        @CsvSource({"1,100", "2,200", "3,300", "4,500", "5,700", "6,1000"}) //Cuando metemos CSV tenemos que indicar el indice, mantenemos llaves pero colocamos el indice.
+        void testDebitoCuentaCSV(String index, String total) {
+            System.out.println(index + " -> " + total);
+            cuenta.debito(new BigDecimal(total));
+            assertNotNull(cuenta.getSaldo());
+            assertTrue(cuenta.getSaldo().compareTo(BigDecimal.ZERO) > 0); //vamos a comprobar si restandole todos los valores que tenemos el credito es mayor a 0
+        }
+
+        @ParameterizedTest(name = "numero {index} ejecutando con el valor {argumentsWithNames}")
+        @CsvFileSource(resources = "/data.csv" ) //Cuando metemos CSVFile tenemos que indicar la ruta del archivo con resources, tiene que estar dentro de la carpeta resource
+        void testDebitoCuentaCSVFile( String total) {
+            cuenta.debito(new BigDecimal(total));
+            assertNotNull(cuenta.getSaldo());
+            assertTrue(cuenta.getSaldo().compareTo(BigDecimal.ZERO) > 0); //vamos a comprobar si restandole todos los valores que tenemos el credito es mayor a 0
+        }
+
+        @ParameterizedTest(name = "numero {index} ejecutando con el valor {argumentsWithNames}")
+        @CsvSource({"200,100", "250,200", "300,300", "510,500", "750,700", "1000,1000"}) //añadimos el saldo que disponemos y el saldo que le restamos
+        void testDebitoCuentaCSV2(String saldo, String total) {
+            cuenta.setSaldo(new BigDecimal(saldo));
+            cuenta.debito(new BigDecimal(total));
+            assertNotNull(cuenta.getSaldo());
+            assertTrue(cuenta.getSaldo().compareTo(BigDecimal.ZERO) > 0); //vamos a comprobar si restandole todos los valores que tenemos el credito es mayor a 0
+        }
+    }
+
+    @Tag("param")
+    //Este test es para hacer en conjunto con un metodo de la clase. No es bueno separarlo a clase anidada, ya que tiene un metodo static
+    @ParameterizedTest(name = "numero {index} ejecutando con el valor {argumentsWithNames}")
+    @MethodSource("totalList") //tenemos que crear un metodo dentro de la clase test, y este debe ser estatico.
+    void testDebitoCuentaMethodSource( String total) {
         cuenta.debito(new BigDecimal(total));
         assertNotNull(cuenta.getSaldo());
         assertTrue(cuenta.getSaldo().compareTo(BigDecimal.ZERO) > 0); //vamos a comprobar si restandole todos los valores que tenemos el credito es mayor a 0
     }
 
+    static  List<String> totalList(){
+        return Arrays.asList("100", "200", "300", "500", "700", "1000");
+    }
 
+
+    //PARA HACER USO DE LOS TAG, HAY QUE EDIT CONFIG Y DARLE A QUE SE POR TAG Y NO POR METODO O CLASE.
 
 }
