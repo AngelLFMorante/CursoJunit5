@@ -12,10 +12,12 @@ import src.main.java.org.afernandez.junit5app.exceptions.DineroInsuficienteExcep
 import src.main.java.org.afernandez.junit5app.models.Banco;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.*;
@@ -62,7 +64,14 @@ class CuentaTest {
         @DisplayName("Probando nombre de la cuenta corriente!")
             //esto es para ponerle un nombre descriptivo para cuando salga en los métodos.
             //asi le damos un significado al metodo.
-        void testNombreCuenta() {
+        void testNombreCuenta(TestInfo testInfo, TestReporter testReporter) {
+            //el testReporter hace la salida de log en la salida de unit del plataform. lo saca con un timestamp
+            testReporter.publishEntry("ejecutando: " +
+                    testInfo.getDisplayName() +
+                    " " +
+                    testInfo.getTestMethod().orElse(null).getName() +
+                    " con las etiquetas: " +
+                    testInfo.getTags());
             //cuenta = new Cuenta("Ángel", new BigDecimal("1000.12345"));
             String esperado = "Ángel";
             String actual = cuenta.getPersona();
@@ -381,5 +390,29 @@ class CuentaTest {
 
 
     //PARA HACER USO DE LOS TAG, HAY QUE EDIT CONFIG Y DARLE A QUE SE POR TAG Y NO POR METODO O CLASE.
+
+    @Nested
+    @Tag("timeout")
+    class EjemploTimeOutTest{
+
+        @Test
+        @Timeout(1) //se puede meter en enteros, y eso representa segundos
+        void pruebaTimeOut() throws InterruptedException {
+            TimeUnit.SECONDS.sleep(2); //si despues de 5 segundo no ha pasado nada pues salta error
+        }
+
+        @Test
+        @Timeout(value = 500, unit = TimeUnit.MILLISECONDS) //corresponde a medio segundo
+        void pruebaTimeOut2() throws InterruptedException {
+            TimeUnit.SECONDS.sleep(2); //si despues de 5 segundo no ha pasado nada pues salta error
+        }
+
+        @Test
+        void testTimeOutAssertions() {
+            assertTimeout(Duration.ofSeconds(5), ()->{
+                TimeUnit.MILLISECONDS.sleep(4000);
+            });
+        }
+    }
 
 }

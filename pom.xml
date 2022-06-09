@@ -7,6 +7,24 @@
     <groupId>org.afernandez.junit5app.ejemplo</groupId>
     <artifactId>junit5app</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <build>
+<!--        Para utilizar los test con maven tenemos que poner el plugins de surefire para ver en la consola los tests
+nos da los reportes en target, y podemos visualizar todo-->
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.12.4</version>
+<!--                si queremos solo ejecutar etiquetas personalizadas con el tag que tenemos
+            <configuration>
+                    <groups>timeout</groups>
+                </configuration>
+                Obtengo este error y no veo solucion en internet ni en el curso:
+                groups/excludedGroups require TestNG or JUunit48+ on project test classpath
+-->
+            </plugin>
+        </plugins>
+    </build>
     <dependencies>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
