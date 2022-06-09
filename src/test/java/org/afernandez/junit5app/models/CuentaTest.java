@@ -1,27 +1,72 @@
 package src.test.java.org.afernandez.junit5app.models;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.afernandez.junit5app.models.Cuenta;
+import org.junit.jupiter.api.condition.*;
 import src.main.java.org.afernandez.junit5app.exceptions.DineroInsuficienteException;
 import src.main.java.org.afernandez.junit5app.models.Banco;
 
 import java.math.BigDecimal;
+import java.util.Map;
+import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+//@TestInstance(TestInstance.Lifecycle.PER_CLASS) //podemos instanciar por clase o por metodos. con lo que se podria quitar el static en beforeAll (No se recomienda)
 class CuentaTest {
 
+    //@BeforeAll (metodo static) se ejecuta antes que todos los metodos solo 1 vez (Cuidado porque se crea antes de la clase)
+    //@AfterAll (metodo static) se ejecuta una vez acabado todos los metodos solo 1 vez (Cuidado porque se crea antes de la clase)
+    //@BeforeEach antes de empezar un metodo se llama a beforeEach
+    //@AfterEach despues de que se haya finalizado el metodo, se llama a afterEach
+    Cuenta cuenta;
+
+    //para que se ejecute en diferentes sistemas operativos o versiones
+    //@EnabledOnOs, @EnabledOnJre, @EnabledIfSystemProperty
+
+    @BeforeEach //se ejecuta antes de cada metodo (metodo de ciclo de vida)
+    void initMetodoTest(){
+        //reutilizamos
+        this.cuenta = new Cuenta("Ángel", new BigDecimal("1000.12345"));
+        System.out.println("iniciando el método.");
+    }
+
+    @AfterEach //se ejecuta despues de cada metodo (metodo de ciclo de vida)
+    void tearDown(){
+        System.out.println("Finalizando el metodo de prueba");
+    }
+
+    @BeforeAll //se crea antes de todo.
+    static void beforeAll() {
+        System.out.println("inicializando la clase test pero no las instancia");
+    }
+
+    @AfterAll
+    static void afterAll() {
+        System.out.println("finalizando la clase test pero no las instancias");
+    }
+
     @Test
+    @DisplayName("Probando nombre de la cuenta corriente!")
+        //esto es para ponerle un nombre descriptivo para cuando salga en los métodos.
+    //asi le damos un significado al metodo.
     void testNombreCuenta() {
-        Cuenta cuenta = new Cuenta("Ángel", new BigDecimal("1000.12345"));
+        //cuenta = new Cuenta("Ángel", new BigDecimal("1000.12345"));
         String esperado = "Ángel";
         String actual = cuenta.getPersona();
-        assertEquals(esperado, actual);
+        assertNotNull(actual, "la cuenta no peude ser nula");
+        assertEquals(esperado, actual, "El nombre de la cuenta no es el que esperaba");
+        //se pueden poner mensajes descriptivos, solo se va a mostrar cuando hay un error, aunque se puede mandar
+        //de forma lambda, aunque hay que tener cuidado, que el mensaje puede salir aunque esté correcto.
+        //le metemos un metodo con el string que va a invocar por debajo del assert, de si falla sale el mensaje, esto es lo mas correcto porque nos aseguramos que salga cuando falla.
+        /*
+            assertNotNull(actual, ()-> "la cuenta: " + actual + " no puede ser nula");
+         */
     }
 
     @Test
     void testSaldoCuenta(){
-        Cuenta cuenta = new Cuenta("Ángel", new BigDecimal("1000.12345"));
+        //cuenta = new Cuenta("Ángel", new BigDecimal("1000.12345"));
         assertEquals(1000.12345, cuenta.getSaldo().doubleValue());
         // hay que darle el valor del double ya que bigDecimal lo necesita.(mira documentación si no te acueradas)
         assertFalse(cuenta.getSaldo().compareTo(BigDecimal.ZERO) < 0);
@@ -32,7 +77,7 @@ class CuentaTest {
     @Test
     void testReferenciaCuenta() {
         //vamos a crear un TDD, con lo que tendremos dos objetos en diferentes estados de memoria y no como referencia
-        Cuenta cuenta = new Cuenta("Jhon Done", new BigDecimal("8900.9997"));
+        cuenta = new Cuenta("Jhon Done", new BigDecimal("8900.9997"));
         Cuenta cuenta2 = new Cuenta("Jhon Done", new BigDecimal("8900.9997"));
 
         //assertNotEquals(cuenta2, cuenta);//comparamos que sean distintos...
@@ -48,7 +93,7 @@ class CuentaTest {
 
     @Test
     void testDebitoCuenta() {
-        Cuenta cuenta = new Cuenta("Ángel", new BigDecimal("1000.12345"));
+        //cuenta = new Cuenta("Ángel", new BigDecimal("1000.12345"));
         cuenta.debito(new BigDecimal(100)); // se le va a restar 1000 de los 1000
         assertNotNull(cuenta.getSaldo());
         assertEquals(900, cuenta.getSaldo().intValue());
@@ -57,7 +102,7 @@ class CuentaTest {
 
     @Test
     void testCreditoCuenta() {
-        Cuenta cuenta = new Cuenta("Ángel", new BigDecimal("1000.12345"));
+        //cuenta = new Cuenta("Ángel", new BigDecimal("1000.12345"));
         cuenta.credito(new BigDecimal(100)); // se le va a sumar 1000 de los 1000
         assertNotNull(cuenta.getSaldo());
         assertEquals(1100, cuenta.getSaldo().intValue());
@@ -66,7 +111,7 @@ class CuentaTest {
 
     @Test
     void testDineroInsuficienteExceptionCuenta() {
-        Cuenta cuenta = new Cuenta("Ángel", new BigDecimal("1000.12345"));
+         //cuenta = new Cuenta("Ángel", new BigDecimal("1000.12345"));
         Exception exception = assertThrows(DineroInsuficienteException.class, ()->{
            cuenta.debito(new BigDecimal(1500));
         });
@@ -88,6 +133,9 @@ class CuentaTest {
     }
 
     @Test
+    @Disabled //aparece en el reporte de que este test está deshabilitado, hasta que lo arreglemos.
+    //Cuando hay algun método que todavia no lo hemos implementado, pero queremos seguir con otras pruebas..
+    //utilizamos @Disabled, para obligar a fallar -> fail(); te aseguras que falla el método.
     void testRelacionBancoCuentas() {
         Cuenta cuenta1 = new Cuenta ("Jhon Done", new BigDecimal("2500"));
         Cuenta cuenta2 = new Cuenta ("Ángel", new BigDecimal("1500.8989"));
@@ -123,5 +171,84 @@ class CuentaTest {
                 .isPresent());
         //aunque nso da warning para que lo pongamos con anyMatch para ver que si hay algun resultado.
         // banco.getCuentas().stream().anyMatch(c -> c.getPersona().equals("Ángel")));
+
+
+        //assertAll expresion lambda, en cada funcion lambda se le mete un assert
+        //así por cada una que queremos comprobar, esto se hace para comprobar todas y que no se quede el test en un solo error.
+        //Aquí dejo el ejemplo: es para colocar todas las comprobaciones que queremos hacer y que se reflejen todos los fallos.
+        /*
+        assertAll(()->{
+            assertEquals("1000.8989", cuenta2.getSaldo().toPlainString());
+            },
+            ()->{
+                assertEquals("3000", cuenta1.getSaldo().toPlainString());
+            },
+        }
+         */
+    }
+
+    @Test
+    @EnabledOnOs(OS.WINDOWS) //con OS nos salen todos los sitemas
+    void testSoloWindows(){
+
+    }
+
+    @Test
+    @EnabledOnOs({OS.LINUX, OS.MAC}) //con OS nos salen todos los sitemas
+    //Si le damos al metodo solamente haciendo run, lo va ha realizar aunque no sea linux ni mac por que se hace global con la clase.
+    void testSoloLinuxMac(){
+
+    }
+
+    @Test
+    @DisabledOnOs(OS.WINDOWS)
+    void testNoWindows(){
+
+    }
+
+    @Test
+    @EnabledOnJre(JRE.JAVA_8) //es para versiones de java jdk8, esto es lo que saldría: Disabled on JRE version: 11, porque estoy con la version jdk 11
+    void testSoloJDK8(){
+
+    }
+
+    @Test
+    @EnabledOnJre(JRE.JAVA_11) //es para versiones de java jdk11, si funciona porque estoy con la version jdk 11
+    void testSoloJDK11(){
+
+    }
+
+    //tambien hay para deshabilitarlo con @DisabledOnJre(JRE.JAVA_11)
+
+    @Test //comprobamos las caracteristicas de las propiedades que estamos utilizando y moldearlo a nuestra manera.
+    void imprimirSystemProperties(){
+        Properties properties = System.getProperties();
+        properties.forEach((k,v) -> System.out.println(k + " : " +v));
+    }
+
+    @Test
+    @EnabledIfSystemProperty(named = "java.version", matches = "15.0.1") //lo realiza cuando sea de clase, no vale solo con darle al run metodo ( no lo comprueba)
+    void testJavaVersion() {
+    }
+
+    @Test
+    @EnabledIfSystemProperty(named = "user.name", matches = "alfernandezm")
+    void testUserName(){
+    }
+
+    /*
+    Para activar nuestra variable ENV hay que especificarlo arriba al lado del martillo, le damos click ***Test V editConfiguration donde pone build and run, vemos -ea pues le añadimos =  -DEV=dev para activarlo
+     */
+
+    @Test
+    void imprimirVariablesAmbiente() {
+        Map<String, String> getenv = System.getenv();
+        getenv.forEach((k,v)-> System.out.println(k + " : " + v));
+    }
+
+    @Test
+    @EnabledIfEnvironmentVariable(named = "JAVA_HOME", matches = ".*jdk1.8.0_311.*" )
+    void testJavaHome(){
+
     }
 }
